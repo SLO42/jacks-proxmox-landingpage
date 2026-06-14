@@ -52,15 +52,55 @@ npm run preview  # serve the production build locally
 
 ### Option A — Docker (recommended)
 
-Run inside any LXC/VM that has Docker installed:
+If you already have an LXC/VM with Docker, just run `docker compose up -d --build`
+from the repo. Starting from a fresh Proxmox LXC, here's the full path.
 
+> [!IMPORTANT]
+> Docker needs **nesting** enabled in the LXC or the daemon won't start.
+> Run this on the **Proxmox host** for your container (CT `200` here):
+> ```bash
+> pct set 200 --features nesting=1,keyctl=1
+> pct reboot 200
+> ```
+> (Don't have the container yet? See *"One-line LXC creation"* below first.)
+
+**1. Enter the container** (from the Proxmox host):
 ```bash
-docker compose up -d --build
+pct enter 200
 ```
 
-The site is then served on **`http://<container-ip>:8080`**
-(map a different host port by editing `docker-compose.yml`). A `/healthz`
-endpoint and container `HEALTHCHECK` are included for monitoring.
+**2. Install Docker** (inside the container):
+```bash
+apt update && apt install -y git ca-certificates curl
+curl -fsSL https://get.docker.com | sh      # official Docker install script
+systemctl enable --now docker
+docker --version                            # sanity check
+```
+
+**3. Clone the repo and start the app:**
+```bash
+git clone https://github.com/SLO42/jacks-proxmox-landingpage.git
+cd jacks-proxmox-landingpage
+docker compose up -d --build
+```
+The `claude/modern-landing-page-uuu21z` branch is the repo default, so a plain
+clone checks out the site automatically — no `git checkout` needed. (If the repo
+is private, clone with a Personal Access Token or deploy key.)
+
+**4. Verify and open it:**
+```bash
+hostname -I                       # the container's IP
+docker compose ps                 # STATUS should read "healthy"
+curl -s localhost:8080/healthz    # -> ok
+```
+The site is served on **`http://<container-ip>:8080`** — map a different host
+port by editing `ports:` in `docker-compose.yml`. A `/healthz` endpoint and a
+container `HEALTHCHECK` are included for monitoring.
+
+**Updating after code changes:**
+```bash
+git pull && docker compose up -d --build
+```
 
 ### Option B — Plain nginx in an LXC container
 
