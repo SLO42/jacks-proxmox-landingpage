@@ -1,0 +1,15 @@
+services:
+  landingpage:
+    build: .
+    image: jacks-proxmox-landingpage:latest
+    container_name: jacks-homelab-landing
+    restart: unless-stopped
+    ports:
+      # host:container — change the host port to taste
+      - "8080:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
