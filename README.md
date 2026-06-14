@@ -89,21 +89,28 @@ On the Proxmox host, the `pct` tooling makes a Debian container in seconds.
 missing:
 
 ```bash
-pveam update                                  # refresh the catalog
-pveam available --section system | grep debian   # list exact names
-pveam download local debian-12-standard_amd64.tar.zst
+pveam update                            # refresh the catalog
+pveam available --section system        # list exact names
 ```
 
-Use the **exact** filename `pveam` lists — on Proxmox 9.x the current image may
-be `debian-13-standard_amd64.tar.zst`.
-
-Then create the container. Note the **`--rootfs`** flag: the default `local`
-storage only holds templates, ISOs and backups — it does *not* support
-container root volumes, so point the rootfs at storage that does (commonly
-`local-lvm`, or your ZFS/Ceph pool):
+> [!IMPORTANT]
+> Template names include a **version**. The catalog lists e.g.
+> `debian-12-standard_12.12-1_amd64.tar.zst`, *not*
+> `debian-12-standard_amd64.tar.zst`. Copy the full name verbatim — the short
+> form is "no such template".
 
 ```bash
-pct create 200 local:vztmpl/debian-12-standard_amd64.tar.zst \
+# use the exact name from the list above (versions change over time):
+pveam download local debian-12-standard_12.12-1_amd64.tar.zst
+```
+
+Then create the container, referencing that **same** versioned filename. Note
+the **`--rootfs`** flag: the default `local` storage only holds templates, ISOs
+and backups — it does *not* support container root volumes, so point the rootfs
+at storage that does (commonly `local-lvm`, or your ZFS/Ceph pool):
+
+```bash
+pct create 200 local:vztmpl/debian-12-standard_12.12-1_amd64.tar.zst \
   --hostname homelab-landing --cores 1 --memory 512 \
   --rootfs local-lvm:8 \
   --net0 name=eth0,bridge=vmbr0,ip=dhcp --unprivileged 1 --start 1
@@ -112,6 +119,9 @@ pct create 200 local:vztmpl/debian-12-standard_amd64.tar.zst \
 The template comes from `local` (which supports `vztmpl`); only the rootfs needs
 container-capable storage. Check what's available with
 `pvesm status -content rootdir`. Then follow Option A or B inside it.
+
+> **Tip:** the GUI does this without exact typing — `local (pve)` →
+> **CT Templates** → **Templates**, pick from the list, download.
 
 ## License
 
