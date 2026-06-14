@@ -97,10 +97,47 @@ The site is served on **`http://<container-ip>:8080`** — map a different host
 port by editing `ports:` in `docker-compose.yml`. A `/healthz` endpoint and a
 container `HEALTHCHECK` are included for monitoring.
 
-**Updating after code changes:**
+**Updating after code or config changes:**
+
+> [!IMPORTANT]
+> The site is **compiled into the image at build time** (multi-stage build →
+> static files baked into nginx). That means **restarting does nothing** —
+> `docker compose restart`, `docker restart`, and `systemctl restart docker`
+> all relaunch the *old* image. To see any edit (service links in
+> `src/`, `docker-compose.yml`, etc.) you must **rebuild the image**.
+
+Run this from inside the cloned repo, **on the same machine that's running the
+container** (i.e. inside the LXC, not your laptop — unless that's where the
+container lives):
+
 ```bash
-git pull && docker compose up -d --build
+git pull                              # only if you pushed changes elsewhere
+docker compose up -d --build          # rebuild image + recreate container
 ```
+
+`--build` is what does the work; `up` then swaps the running container for the
+freshly built one. Confirm the new build is live:
+
+```bash
+docker compose ps                     # STATUS "healthy"
+docker compose images                 # CREATED should be just now
+```
+
+If you *still* see the old site:
+
+```bash
+# 1. Force a clean rebuild that ignores Docker's layer cache:
+docker compose build --no-cache && docker compose up -d --force-recreate
+
+# 2. Bypass your browser cache with a hard refresh (Ctrl/Cmd + Shift + R),
+#    or test from the container itself to rule the browser out:
+curl -s localhost:8080 | grep -o '<title>[^<]*</title>'
+```
+
+> **Editing in the right place:** `docker compose` builds from the files in the
+> current directory. If you edited files on your workstation but build inside
+> the LXC, the container won't see them until you `git push` from the
+> workstation and `git pull` in the container (or copy the files over).
 
 ### Option B — Plain nginx in an LXC container
 
