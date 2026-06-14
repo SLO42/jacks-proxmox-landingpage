@@ -83,9 +83,24 @@ endpoint and container `HEALTHCHECK` are included for monitoring.
 ### Tip: one-line LXC creation
 
 On the Proxmox host, the `pct` tooling makes a Debian container in seconds.
-Note the **`--rootfs`** flag: the default `local` storage only holds templates,
-ISOs and backups — it does *not* support container root volumes, so point the
-rootfs at storage that does (commonly `local-lvm`, or your ZFS/Ceph pool):
+
+**First, download an LXC template** — Proxmox won't fetch it automatically, and
+`pct create` fails with `volume '...' does not exist` if the template is
+missing:
+
+```bash
+pveam update                                  # refresh the catalog
+pveam available --section system | grep debian   # list exact names
+pveam download local debian-12-standard_amd64.tar.zst
+```
+
+Use the **exact** filename `pveam` lists — on Proxmox 9.x the current image may
+be `debian-13-standard_amd64.tar.zst`.
+
+Then create the container. Note the **`--rootfs`** flag: the default `local`
+storage only holds templates, ISOs and backups — it does *not* support
+container root volumes, so point the rootfs at storage that does (commonly
+`local-lvm`, or your ZFS/Ceph pool):
 
 ```bash
 pct create 200 local:vztmpl/debian-12-standard_amd64.tar.zst \
@@ -94,9 +109,9 @@ pct create 200 local:vztmpl/debian-12-standard_amd64.tar.zst \
   --net0 name=eth0,bridge=vmbr0,ip=dhcp --unprivileged 1 --start 1
 ```
 
-The template still comes from `local` (which supports `vztmpl`); only the
-rootfs needs container-capable storage. Check what's available on your host
-with `pvesm status -content rootdir`. Then follow Option A or B inside it.
+The template comes from `local` (which supports `vztmpl`); only the rootfs needs
+container-capable storage. Check what's available with
+`pvesm status -content rootdir`. Then follow Option A or B inside it.
 
 ## License
 
