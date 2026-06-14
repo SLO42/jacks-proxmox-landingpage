@@ -82,16 +82,21 @@ endpoint and container `HEALTHCHECK` are included for monitoring.
 
 ### Tip: one-line LXC creation
 
-On the Proxmox host, the community `pct` tooling makes a Debian container in
-seconds:
+On the Proxmox host, the `pct` tooling makes a Debian container in seconds.
+Note the **`--rootfs`** flag: the default `local` storage only holds templates,
+ISOs and backups — it does *not* support container root volumes, so point the
+rootfs at storage that does (commonly `local-lvm`, or your ZFS/Ceph pool):
 
 ```bash
 pct create 200 local:vztmpl/debian-12-standard_amd64.tar.zst \
   --hostname homelab-landing --cores 1 --memory 512 \
+  --rootfs local-lvm:8 \
   --net0 name=eth0,bridge=vmbr0,ip=dhcp --unprivileged 1 --start 1
 ```
 
-Then follow Option A or B inside it.
+The template still comes from `local` (which supports `vztmpl`); only the
+rootfs needs container-capable storage. Check what's available on your host
+with `pvesm status -content rootdir`. Then follow Option A or B inside it.
 
 ## License
 
